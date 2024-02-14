@@ -6,12 +6,12 @@
 Author: sigal1980
 Date: 2024-02-07
 '''
-#-----------------------------------------------------
+
 from collections import namedtuple
 
 #-----------------------------------------------------
 '''Настройки'''
-Shedule_dict = namedtuple('Shedule_dict', [
+_Shedule_keys = namedtuple('Shedule_keys', [
                                         'NUMBER',
                                         'DATE',
                                         'PAY_MIN',
@@ -20,19 +20,17 @@ Shedule_dict = namedtuple('Shedule_dict', [
                                         'EARLY_PAY',
                                         'DEBT'])
 
-CONFIG = {
-    # теперь для измменения имени ключа в графике...
-    # ... меняем 0-ое значение в кортеже. 1-й и 2-й элементы
-    # кортежа это заголовок шапки при печати и ширина столбца
-    'keys': Shedule_dict(
-                ('Number', '№', 4),
-                ('Date', 'Дата', 12),
-                ('Pay_min', 'Мин.платеж', 12),
-                ('Pay_debt', 'Осн.долг', 10),
-                ('Pay_percent', 'Проценты', 12),
-                ('Early_pay', 'Дос.погашение', 14),
-                ('Debt', 'Долг', 12))
-    }
+# теперь для измменения имени ключа в графике...
+# ... меняем 0-ое значение в кортеже. 1-й и 2-й элементы
+# кортежа это заголовок шапки при печати и ширина столбца
+_SHEDULE_KEYS = _Shedule_keys(
+            ('Number', '№', 4),
+            ('Date', 'Дата', 12),
+            ('Pay_min', 'Мин.платеж', 12),
+            ('Pay_debt', 'Осн.долг', 10),
+            ('Pay_percent', 'Проценты', 12),
+            ('Early_pay', 'Дос.погашение', 14),
+            ('Debt', 'Долг', 12))
 
 #-----------------------------------------
 
@@ -58,14 +56,14 @@ class MixinSheduleToDisplay:
     в виде простой таблицы.'''
 
     def shedule_to_display(self) -> list:
-        str_out = f'Информация по кредиту:\n'
+        str_out = ''
         # собираем шапку таблицы
-        for value in CONFIG['keys']:
+        for value in _SHEDULE_KEYS:
             str_out += f'{value[1]: <{value[2]}}'
         str_out += '\n'
         # выводим данные о платежах
         for pay in self._shedule:
-            for value in CONFIG['keys']:
+            for value in _SHEDULE_KEYS:
                 if type(pay[value[0]]) in (str, int):
                     flt = ''
                 else:
@@ -163,14 +161,14 @@ class CreditCalcMeta:
             days_in_month = monthrange(pay_date.year,
                                        pay_date.month)[1]
             pay_date += timedelta(days = days_in_month)
-            payment[CONFIG['keys'].NUMBER[0]] = i
-            payment[CONFIG['keys'].DATE[0]] = \
+            payment[_SHEDULE_KEYS.NUMBER[0]] = i
+            payment[_SHEDULE_KEYS.DATE[0]] = \
                     pay_date.isoformat()
-            payment[CONFIG['keys'].PAY_MIN[0]] = 0.0
-            payment[CONFIG['keys'].PAY_DEBT[0]] = 0.0
-            payment[CONFIG['keys'].PAY_PERCENT[0]] = 0.0
-            payment[CONFIG['keys'].EARLY_PAY[0]] = 0.0
-            payment[CONFIG['keys'].DEBT[0]] = 0.0
+            payment[_SHEDULE_KEYS.PAY_MIN[0]] = 0.0
+            payment[_SHEDULE_KEYS.PAY_DEBT[0]] = 0.0
+            payment[_SHEDULE_KEYS.PAY_PERCENT[0]] = 0.0
+            payment[_SHEDULE_KEYS.EARLY_PAY[0]] = 0.0
+            payment[_SHEDULE_KEYS.DEBT[0]] = 0.0
             self._shedule.append(payment)
         return self._shedule
 
@@ -208,15 +206,15 @@ class CreditCalcDiff(MixinOverpay,
         for payment in self._shedule:
             self._get_pay_percent()
             self._get_pay_min()
-            payment[CONFIG['keys'].PAY_DEBT[0]] = \
+            payment[_SHEDULE_KEYS.PAY_DEBT[0]] = \
                     self._pay_debt
-            payment[CONFIG['keys'].PAY_MIN[0]] = \
+            payment[_SHEDULE_KEYS.PAY_MIN[0]] = \
                     self._pay_min
-            payment[CONFIG['keys'].PAY_PERCENT[0]] = \
+            payment[_SHEDULE_KEYS.PAY_PERCENT[0]] = \
                     self._pay_percent
-            payment[CONFIG['keys'].EARLY_PAY[0]] = self._debt
+            payment[_SHEDULE_KEYS.EARLY_PAY[0]] = self._debt
             self._debt -= self._pay_debt
-            payment[CONFIG['keys'].DEBT[0]] = self._debt
+            payment[_SHEDULE_KEYS.DEBT[0]] = self._debt
         return self._shedule
 
 #---------------------------------------------------------
@@ -246,25 +244,26 @@ class CreditCalcAnnuitet(MixinOverpay,
         for payment in self._shedule:
             self._get_pay_percent()
             self._get_pay_debt()
-            payment[CONFIG['keys'].PAY_DEBT[0]] = \
+            payment[_SHEDULE_KEYS.PAY_DEBT[0]] = \
                     self._pay_debt
-            payment[CONFIG['keys'].PAY_PERCENT[0]] = \
+            payment[_SHEDULE_KEYS.PAY_PERCENT[0]] = \
                     self._pay_percent
-            payment[CONFIG['keys'].PAY_MIN[0]] = \
+            payment[_SHEDULE_KEYS.PAY_MIN[0]] = \
                     self._pay_min
-            payment[CONFIG['keys'].EARLY_PAY[0]] = self._debt
+            payment[_SHEDULE_KEYS.EARLY_PAY[0]] = self._debt
             self._debt -= self._pay_debt
-            payment[CONFIG['keys'].DEBT[0]] = self._debt
+            payment[_SHEDULE_KEYS.DEBT[0]] = self._debt
         return self._shedule
 
 
 if __name__ == '__main__':
     #cc = CreditCalcDiff()
     cc = CreditCalcAnnuitet()
-    cc.debt = 3000000
-    cc.term = 84
-    cc.percent = 11
+    cc.debt = 300000
+    cc.term = 60
+    cc.percent = 22
     shedule = cc.get_pay_shedule()
+    print('График платежей:\n')
     cc.shedule_to_display()
     print(f'Переплата по кредиту: {cc.overpay:.2f}')
 
