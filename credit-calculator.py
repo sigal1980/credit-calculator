@@ -8,6 +8,8 @@ Date: 2024-02-07
 '''
 
 from collections import namedtuple
+from mixins import (MixinSheduleToDisplay,
+                    MixinOverpay)
 
 #-----------------------------------------------------
 '''Настройки'''
@@ -31,50 +33,6 @@ _SHEDULE_KEYS = _Shedule_keys(
             ('Pay_percent', 'Проценты', 12),
             ('Early_pay', 'Дос.погашение', 14),
             ('Debt', 'Долг', 12))
-
-#-----------------------------------------
-
-class MixinOverpay:
-    '''Миксин расчитывает переплату по кредиту'''
-    _overpay: float = 0.0
-
-    @property
-    def overpay(self) -> float:
-        return MixinOverpay._overpay
-
-    def _get_pay_percent(self) -> float:
-        '''Переопределяем метод для добавления расчета переплаты'''
-        pay_percent = super()._get_pay_percent()
-        MixinOverpay._overpay += pay_percent
-        return pay_percent
-
-#-----------------------------------------
-
-class MixinSheduleToDisplay:
-    #import tabulate
-    '''Интерфейс для вывода информации по кредиту на экран
-    в виде простой таблицы.'''
-
-    def table_from_shedule(self,
-                           shedule: list,
-                           headers: list,
-                           columns: list) -> list:
-        '''Входящие параметры:
-            shedule: график платежей;
-            headers: шапка таблицы;
-            columns: ширина столбцов'''
-        str_out = ''
-        # собираем шапку таблицы
-        for header, col_width in zip(headers, columns):
-            str_out += f'{header: <{col_width}}'
-        # Собираем таблицу
-        for payment in shedule:
-            str_out += '\n'
-            for pay, col_width in zip(payment, columns):
-                fmt = '' if type(payment[pay]) in (str, int) else '.2f'
-                str_out += f'{payment[pay]: <{col_width}{fmt}}'
-
-        return str_out
 
 #-----------------------------------------
 
@@ -126,11 +84,6 @@ class CreditCalcMeta:
     @percent.setter
     def percent(self, value: float) -> None:
         self._percent = value
-
-    @property
-    def shedule(self) -> list:
-        '''Свойство для ЧТЕНИЯ графика платежей.'''
-        return self._shedule
 
     def _get_pay_debt(self) -> float:
         '''Высчитывает сумму погашения основного долга в
@@ -271,6 +224,6 @@ if __name__ == '__main__':
     headers = [value[1] for value in _SHEDULE_KEYS]
     col_width = [value[2] for value in _SHEDULE_KEYS]
     print(cc.table_from_shedule(shedule, headers, col_width))
-    print(f'Переплата по кредиту: {cc.overpay:.2f}')
+    print(f'\nПереплата по кредиту: {cc.overpay:.2f}')
 
 
