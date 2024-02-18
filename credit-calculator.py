@@ -44,9 +44,9 @@ class MixinOverpay:
 
     def _get_pay_percent(self) -> float:
         '''Переопределяем метод для добавления расчета переплаты'''
-        super()._get_pay_percent()
-        MixinOverpay._overpay += self._pay_percent
-        return self._pay_percent
+        pay_percent = super()._get_pay_percent()
+        MixinOverpay._overpay += pay_percent
+        return pay_percent
 
 #-----------------------------------------
 
@@ -55,22 +55,26 @@ class MixinSheduleToDisplay:
     '''Интерфейс для вывода информации по кредиту на экран
     в виде простой таблицы.'''
 
-    def shedule_to_display(self) -> list:
+    def table_from_shedule(self,
+                           shedule: list,
+                           headers: list,
+                           columns: list) -> list:
+        '''Входящие параметры:
+            shedule: график платежей;
+            headers: шапка таблицы;
+            columns: ширина столбцов'''
         str_out = ''
         # собираем шапку таблицы
-        for value in _SHEDULE_KEYS:
-            str_out += f'{value[1]: <{value[2]}}'
-        str_out += '\n'
-        # выводим данные о платежах
-        for pay in self._shedule:
-            for value in _SHEDULE_KEYS:
-                if type(pay[value[0]]) in (str, int):
-                    flt = ''
-                else:
-                    flt = '.2f'
-                str_out += f'{pay[value[0]]: <{value[2]}{flt}}'
+        for header, col_width in zip(headers, columns):
+            str_out += f'{header: <{col_width}}'
+        # Собираем таблицу
+        for payment in shedule:
             str_out += '\n'
-        print(str_out)
+            for pay, col_width in zip(payment, columns):
+                fmt = '' if type(payment[pay]) in (str, int) else '.2f'
+                str_out += f'{payment[pay]: <{col_width}{fmt}}'
+
+        return str_out
 
 #-----------------------------------------
 
@@ -262,9 +266,11 @@ if __name__ == '__main__':
     cc.debt = 300000
     cc.term = 60
     cc.percent = 22
-    shedule = cc.get_pay_shedule()
     print('График платежей:\n')
-    cc.shedule_to_display()
+    shedule = cc.get_pay_shedule()
+    headers = [value[1] for value in _SHEDULE_KEYS]
+    col_width = [value[2] for value in _SHEDULE_KEYS]
+    print(cc.table_from_shedule(shedule, headers, col_width))
     print(f'Переплата по кредиту: {cc.overpay:.2f}')
 
 
